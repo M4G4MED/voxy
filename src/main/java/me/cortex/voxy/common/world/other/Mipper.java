@@ -1,5 +1,7 @@
 package me.cortex.voxy.common.world.other;
 
+import me.cortex.voxy.common.util.LumiseneUtil;
+
 import static me.cortex.voxy.common.world.other.Mapper.withLight;
 
 //Mipper for data
@@ -57,8 +59,20 @@ public class Mipper {
             max = Math.max((mapper.getBlockStateOpacity(I000)<<4), max);
         }
 
+        long lumisene = firstLumisene(mapper, I111);
+        if (Mapper.isAir(lumisene)) lumisene = firstLumisene(mapper, I110);
+        if (Mapper.isAir(lumisene)) lumisene = firstLumisene(mapper, I011);
+        if (Mapper.isAir(lumisene)) lumisene = firstLumisene(mapper, I010);
+        if (Mapper.isAir(lumisene)) lumisene = firstLumisene(mapper, I101);
+        if (Mapper.isAir(lumisene)) lumisene = firstLumisene(mapper, I100);
+        if (Mapper.isAir(lumisene)) lumisene = firstLumisene(mapper, I001);
+        if (Mapper.isAir(lumisene)) lumisene = firstLumisene(mapper, I000);
+        if (!Mapper.isAir(lumisene)) {
+            return withLight(lumisene, 0xFF);
+        }
+
         if (max != -1) {
-            return switch (max&0b111) {
+            long result = switch (max&0b111) {
                 case 0 -> I000;
                 case 1 -> I001;
                 case 2 -> I010;
@@ -69,6 +83,7 @@ public class Mipper {
                 case 7 -> I111;
                 default -> throw new IllegalStateException("Unexpected value: " + (max&0b111));
             };
+            return LumiseneUtil.isLumisene(mapper, result) ? withLight(result, 0xFF) : result;
         } else {
             int blockLight = (Mapper.getLightId(I000) & 0xF0) + (Mapper.getLightId(I001) & 0xF0) + (Mapper.getLightId(I010) & 0xF0) + (Mapper.getLightId(I011) & 0xF0) +
                     (Mapper.getLightId(I100) & 0xF0) + (Mapper.getLightId(I101) & 0xF0) + (Mapper.getLightId(I110) & 0xF0) + (Mapper.getLightId(I111) & 0xF0);
@@ -79,5 +94,9 @@ public class Mipper {
 
             return withLight(I111, (blockLight << 4) | skyLight);
         }
+    }
+
+    private static long firstLumisene(Mapper mapper, long id) {
+        return LumiseneUtil.isLumisene(mapper, id) ? id : 0;
     }
 }

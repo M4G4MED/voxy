@@ -95,7 +95,9 @@ uvec3 makeRemainingAttributes(const in BlockModel model, const in Quad quad, uin
     }
 
     uint addin = 0;
-    if (!isTranslucent) {
+    if (isTranslucent) {
+        tinting.w = 1.0;
+    } else {
         tinting.w = 0.0;
         //Encode the face, the lod level and
         uint encodedData = 0;

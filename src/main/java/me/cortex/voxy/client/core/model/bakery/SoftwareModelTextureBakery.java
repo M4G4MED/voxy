@@ -6,7 +6,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import me.cortex.voxy.client.core.model.ModelFactory;
+import me.cortex.voxy.common.util.LumiseneUtil;
 import me.cortex.voxy.common.util.UnsafeUtil;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -19,7 +21,6 @@ import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
-import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -143,7 +144,7 @@ public class SoftwareModelTextureBakery {
 
             @Override
             public BlockState getBlockState(BlockPos pos) {
-                if (shouldReturnAirForFluid(pos, face)) {
+                if (shouldReturnAirForFluid(pos, face) || shouldReturnAirAboveLumisene(state, pos)) {
                     return Blocks.AIR.defaultBlockState();
                 }
 
@@ -161,7 +162,7 @@ public class SoftwareModelTextureBakery {
 
             @Override
             public FluidState getFluidState(BlockPos pos) {
-                if (shouldReturnAirForFluid(pos, face)) {
+                if (shouldReturnAirForFluid(pos, face) || shouldReturnAirAboveLumisene(state, pos)) {
                     return Blocks.AIR.defaultBlockState().getFluidState();
                 }
 
@@ -193,7 +194,13 @@ public class SoftwareModelTextureBakery {
         } else {
             this.opaqueVC.setDefaultMeta(this.opaqueVC.getDefaultMeta()&~1);//remove discard
         }
-        Minecraft.getInstance().getBlockRenderer().renderLiquid(BlockPos.ZERO, getter, vc, state, state.getFluidState());
+        FluidState fluidState = state.getFluidState();
+        var handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getType());
+        if (handler != null) {
+            handler.renderFluid(BlockPos.ZERO, getter, vc, state, fluidState);
+        } else {
+            Minecraft.getInstance().getBlockRenderer().renderLiquid(BlockPos.ZERO, getter, vc, state, fluidState);
+        }
         this.translucentVC.setDefaultMeta(0);//Reset default meta
         this.opaqueVC.setDefaultMeta(0);//Reset default meta
     }
@@ -202,6 +209,10 @@ public class SoftwareModelTextureBakery {
         var fv = Direction.from3DDataValue(face).getNormal();
         int dot = fv.getX() * pos.getX() + fv.getY() * pos.getY() + fv.getZ() * pos.getZ();
         return dot >= 1;
+    }
+
+    private static boolean shouldReturnAirAboveLumisene(BlockState state, BlockPos pos) {
+        return pos.getY() > 0 && LumiseneUtil.isLumisene(state);
     }
 
     public void free() {
@@ -219,13 +230,10 @@ public class SoftwareModelTextureBakery {
     public int renderToOutput(BlockState state, long outputBuffer) {
         MemoryUtil.memSet(outputBuffer, 0, 16 * 16 * 8 * 6);
 
-        boolean isBlock = true;
-        if (state.getBlock() instanceof LiquidBlock) {
-            isBlock = false;
-        }
+        boolean isBlock = !ModelFactory.isFluidBlockState(state);
 
         RenderType blockRenderLayer = null;
-        if (state.getBlock() instanceof LiquidBlock) {
+        if (!isBlock) {
             blockRenderLayer = ItemBlockRenderTypes.getRenderLayer(state.getFluidState());
         } else {
             if (state.getBlock() instanceof LeavesBlock) {
@@ -268,8 +276,6 @@ public class SoftwareModelTextureBakery {
             }
         } else {// Is fluid, slow path :(
 
-            if (!(state.getBlock() instanceof LiquidBlock))
-                throw new IllegalStateException();
             for (int i = 0; i < VIEWS.length; i++) {
                 this.opaqueVC.reset();
                 this.translucentVC.reset();
