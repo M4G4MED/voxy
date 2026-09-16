@@ -49,66 +49,72 @@ repositories {
         dirs("libs")
     }
 
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Modrinth"
-                url = uri("https://api.modrinth.com/maven")
+    maven {
+        url = uri("https://artifex.soh.gg/maven/m3t4f1v3/bp-voxy-packages/")
+    }
+
+    if (prop("useRubyOnly").toBoolean()) {
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "Modrinth"
+                    url = uri("https://api.modrinth.com/maven")
+                }
             }
-        }
-        filter {
-            includeGroup("maven.modrinth")
-        }
-    }
-
-    // exclusiveContent {
-    //     forRepository {
-    //         maven {
-    //             name = "CurseForge"
-    //             url = uri("https://cursemaven.com")
-    //         }
-    //     }
-    //     filter {
-    //         includeGroup("curse.maven")
-    //     }
-    // }
-
-    maven {
-        url = uri("https://maven.shedaniel.me/")
-    }
-
-    maven {
-        url = uri("https://maven.terraformersmc.com/releases/")
-    }
-
-    maven {
-        name = "CaffeineMC"
-        url = uri("https://maven.caffeinemc.net/releases") // or /snapshots
-    }
-
-    exclusiveContent {
-        forRepository {
-            ivy {
-                name = "github"
-                url = uri("https://github.com/")
-
-                patternLayout {
-                    artifact("/[organisation]/[module]/releases/download/[revision]/[module]-[revision]-[classifier].[ext]")
-                }
-
-                metadataSources {
-                    artifact()
-                }
+            filter {
+                includeGroup("maven.modrinth")
             }
         }
 
-        filter {
-            includeModuleByRegex("[^\\.]+", "nvidium")
+        // exclusiveContent {
+        //     forRepository {
+        //         maven {
+        //             name = "CurseForge"
+        //             url = uri("https://cursemaven.com")
+        //         }
+        //     }
+        //     filter {
+        //         includeGroup("curse.maven")
+        //     }
+        // }
+
+        maven {
+            url = uri("https://maven.shedaniel.me/")
         }
-    }
-    maven {
-        name = "Sinytra"
-        url = uri("https://maven.su5ed.dev/releases")
+
+        maven {
+            url = uri("https://maven.terraformersmc.com/releases/")
+        }
+
+        maven {
+            name = "CaffeineMC"
+            url = uri("https://maven.caffeinemc.net/releases") // or /snapshots
+        }
+
+        exclusiveContent {
+            forRepository {
+                ivy {
+                    name = "github"
+                    url = uri("https://github.com/")
+
+                    patternLayout {
+                        artifact("/[organisation]/[module]/releases/download/[revision]/[module]-[revision]-[classifier].[ext]")
+                    }
+
+                    metadataSources {
+                        artifact()
+                    }
+                }
+            }
+
+            filter {
+                includeModuleByRegex("[^\\.]+", "nvidium")
+            }
+        }
+        maven {
+            name = "Sinytra"
+            url = uri("https://maven.su5ed.dev/releases")
+        }
     }
 }
 

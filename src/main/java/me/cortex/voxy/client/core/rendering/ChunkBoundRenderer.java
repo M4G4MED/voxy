@@ -90,7 +90,16 @@ public class ChunkBoundRenderer {
             }
         }
 
+        //? if 1.20.1 {
+        if (!this.addQueue.isEmpty()) {
+            this.addQueue.forEach(this::_addPos);//TODO: REPLACE WITH SCATTER COMPUTE
+            this.addQueue.clear();
+            UploadStream.INSTANCE.commit();
+        }
+        if (this.chunk2idx.isEmpty()) return;
+        //? } else {
         if (this.chunk2idx.isEmpty() && this.addQueue.isEmpty()) return;
+        //? }
 
         viewport.depthBoundingBuffer.clear(this.properties.inverseClearDepth());
 
@@ -157,11 +166,13 @@ public class ChunkBoundRenderer {
         }
 
 
+        //? if !=1.20.1 {
         if (!this.addQueue.isEmpty()) {
             this.addQueue.forEach(this::_addPos);//TODO: REPLACE WITH SCATTER COMPUTE
             this.addQueue.clear();
             UploadStream.INSTANCE.commit();
         }
+        //? }
     }
 
     private void _remPos(long pos) {

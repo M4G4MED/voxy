@@ -150,8 +150,8 @@ dependencies {
     // modRuntimeOnly("maven.modrinth:sodium-extra:$sodiumExtraFabric")
 
     val chunkyFabric = prop("deps.chunky")
-    modCompileOnly("maven.modrinth:chunky:$chunkyFabric")
-    modRuntimeOnly("maven.modrinth:chunky:$chunkyFabric")
+    modCompileOnly("maven.modrinth:Chunky:$chunkyFabric")
+    modRuntimeOnly("maven.modrinth:Chunky:$chunkyFabric")
 
     val sparkFabric = prop("deps.spark")
     modRuntimeOnly("maven.modrinth:spark:$sparkFabric")

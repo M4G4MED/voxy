@@ -64,8 +64,8 @@ dependencies {
     compileOnly("maven.modrinth:sodium-extra:$sodiumExtraNeo")
 
     val chunkyNeo = prop("deps.chunky")
-    compileOnly("maven.modrinth:chunky:$chunkyNeo")
-    runtimeOnly("maven.modrinth:chunky:$chunkyNeo")
+    compileOnly("maven.modrinth:Chunky:$chunkyNeo")
+    runtimeOnly("maven.modrinth:Chunky:$chunkyNeo")
 
     val sparkNeo = prop("deps.spark")
     runtimeOnly("maven.modrinth:spark:$sparkNeo")
