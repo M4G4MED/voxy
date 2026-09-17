@@ -3,10 +3,13 @@ package me.cortex.voxy.client.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import me.cortex.voxy.client.core.SSAO;
 import me.cortex.voxy.common.Logger;
 import me.cortex.voxy.common.util.cpu.CpuLayout;
 import me.cortex.voxy.commonImpl.VoxyCommon;
+//? if 1.21.1
+import me.cortex.voxy.commonImpl.compat.sable.SableContraptionRenderDistance;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -33,6 +36,8 @@ public class VoxyConfig
     public boolean enableRendering = true;
     public boolean ingestEnabled = true;
     public float sectionRenderDistance = 16;
+    //? if 1.21.1
+    public int simulatedContraptionRenderDistancePercent = 50;
     public int serviceThreads = (int) Math.max(CpuLayout.getCoreCount()/1.5, 1);
     public float subDivisionSize = 64;
     public int skyFogDistance = 96;
@@ -88,14 +93,28 @@ public class VoxyConfig
     public void save() {
         if (!VoxyCommon.isAvailable()) {
             Logger.info("Not saving config since voxy is unavalible");
+            //? if 1.21.1 {
+            this.syncSableContraptionRenderDistance();
+            //? }
             return;
         }
 
         try {
+            //? if 1.21.1 {
+            JsonObject json = GSON.toJsonTree(this).getAsJsonObject();
+            if (!VoxyCommon.getPlatformUtil().isModLoaded("sable")) {
+                json.remove("simulated_contraption_render_distance_percent");
+            }
+            Files.writeString(getConfigPath(), GSON.toJson(json));
+            //? } else {
             Files.writeString(getConfigPath(), GSON.toJson(this));
+            //? }
         } catch (IOException e) {
             Logger.error("Failed to write config file", e);
         }
+        //? if 1.21.1 {
+        this.syncSableContraptionRenderDistance();
+        //? }
     }
 
     private static Path getConfigPath() {
@@ -112,4 +131,14 @@ public class VoxyConfig
     public boolean isRenderingEnabled() {
         return VoxyCommon.isAvailable() && this.enabled && this.enableRendering;
     }
+
+    //? if 1.21.1 {
+    public void syncSableContraptionRenderDistance() {
+        SableContraptionRenderDistance.updateClientConfig(
+                this.isRenderingEnabled(),
+                this.sectionRenderDistance,
+                this.simulatedContraptionRenderDistancePercent
+        );
+    }
+    //? }
 }

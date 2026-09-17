@@ -1,6 +1,7 @@
 package me.cortex.voxy.client.config;
 
 import me.cortex.voxy.client.ClientSessionEvents;
+import me.cortex.voxy.client.compat.sable.SableClientRenderDistance;
 import me.cortex.voxy.client.config.SodiumConfigBuilder.*;
 import me.cortex.voxy.client.core.IGetVoxyRenderSystem;
 import me.cortex.voxy.client.core.SSAO;
@@ -20,6 +21,8 @@ import net.minecraft.resources.ResourceLocation;
 
 @ConfigEntryPointForge("voxy")
 public class VoxyConfigMenu implements ConfigEntryPoint {
+    private static final boolean SABLE_INSTALLED = VoxyCommon.getPlatformUtil().isModLoaded("sable");
+
     @Override
     public void registerConfigLate(ConfigBuilder B) {
         if (!VoxyCommon.isAvailable()) return;//Dont even register the config if its not avalible
@@ -172,6 +175,16 @@ public class VoxyConfigMenu implements ConfigEntryPoint {
                                         new Range(0, 1024, 1))
                                         .setImpact(OptionImpact.LOW)
                                         .setPostChangeFlags(RENDER_RELOAD)
+                        ), new Group(
+                                new IntOption(
+                                        "voxy:simulated_contraption_render_distance",
+                                        Component.translatable("voxy.config.general.simulated_contraption_render_distance"),
+                                        ()->CFG.simulatedContraptionRenderDistancePercent,
+                                        v->{CFG.simulatedContraptionRenderDistancePercent=v; CFG.syncSableContraptionRenderDistance(); SableClientRenderDistance.refreshSableRenderData();},
+                                        new Range(0, 100, 1))
+                                        .setFormatter(v->Component.literal(v+"%"))
+                                        .setEnabler(s->SABLE_INSTALLED)
+                                        .setImpact(OptionImpact.MEDIUM)
                         )
                         .setEnablerInherit(s->!IrisUtil.irisShadersEnabledInConfig(), ConfigState.UPDATE_ON_REBUILD)
                 ).setEnablerAND("voxy:enabled", "voxy:rendering"));

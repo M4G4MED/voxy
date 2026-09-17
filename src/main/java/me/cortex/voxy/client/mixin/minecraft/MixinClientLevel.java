@@ -5,6 +5,8 @@ import me.cortex.voxy.common.world.service.VoxelIngestService;
 import me.cortex.voxy.commonImpl.VoxyCommon;
 import me.cortex.voxy.commonImpl.VoxyInstance;
 import me.cortex.voxy.commonImpl.WorldIdentifier;
+//? if 1.21.1
+import me.cortex.voxy.commonImpl.compat.sable.SableClientSkyLightCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -20,6 +22,8 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.dimension.DimensionType;
 
 import java.util.function.Supplier;
+//? if 1.21.1
+import java.util.function.BooleanSupplier;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -49,38 +53,75 @@ public abstract class MixinClientLevel {
         this.bottomSectionY = ((Level)(Object)this).getMinBuildHeight()>>4;
     }
 
+    //? if 1.21.1 {
+    @Inject(method = "tick(Ljava/util/function/BooleanSupplier;)V", at = @At("TAIL"))
+    private void voxy$tickSableSkyLightCache(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
+        SableClientSkyLightCache.tick((ClientLevel) (Object) this);
+    }
+    //? }
+
     @Inject(method = "setBlocksDirty", at = @At("TAIL"))
     private void voxy$injectIngestOnStateChange(BlockPos pos, BlockState old, BlockState updated, CallbackInfo cir) {
         if (old == updated) return;
-
-        //TODO: is this _really_ needed, we should have enough processing power to not need todo it if its only a
-        // block removal
-        if (!updated.isAir()) return;
         if (VoxyCommon.getInstance()==null) return;
         if (!VoxyConfig.CONFIG.ingestEnabled) return;//Only ingest if setting enabled
 
-        var self = (Level)(Object)this;
+        var self = (ClientLevel)(Object)this;
         var wi = WorldIdentifier.of(self);
         if (wi == null) {
             return;
         }
 
+        var sectionPos = SectionPos.of(pos);
         int x = pos.getX()&15;
         int y = pos.getY()&15;
         int z = pos.getZ()&15;
-        if (x == 0 || x==15 || y==0 || y==15 || z==0||z==15) {//Update if there is a statechange on the boarder
-            var csp = SectionPos.of(pos);
-            //Is not using voxy$cheekyGetChunk as dont think is need
-            var chunk = self.getChunk(pos.getX()>>4, pos.getZ()>>4, ChunkStatus.FULL, false);
-            if (chunk != null) {
-                var section = chunk.getSection(csp.y() - this.bottomSectionY);
-                var lp = self.getLightEngine();
+        boolean borderChange = x == 0 || x==15 || y==0 || y==15 || z==0||z==15;
 
-                var blp = lp.getLayerListener(LightLayer.BLOCK).getDataLayerData(csp);
-                var slp = lp.getLayerListener(LightLayer.SKY).getDataLayerData(csp);
+        //TODO: is this _really_ needed, we should have enough processing power to not need todo it if its only a
+        // block removal
+        if (!updated.isAir()) return;
+        if (!borderChange) return;
 
-                VoxelIngestService.rawIngest(wi, section, csp.x(), csp.y(), csp.z(), blp == null ? null : blp.copy(), slp == null ? null : slp.copy());
-            }
+        this.voxy$ingestSection(wi, self, sectionPos);
+
+        if (!borderChange) {
+            return;
         }
+
+        if (x == 0) this.voxy$ingestSection(wi, self, SectionPos.of(sectionPos.x() - 1, sectionPos.y(), sectionPos.z()));
+        if (x == 15) this.voxy$ingestSection(wi, self, SectionPos.of(sectionPos.x() + 1, sectionPos.y(), sectionPos.z()));
+        if (y == 0) this.voxy$ingestSection(wi, self, SectionPos.of(sectionPos.x(), sectionPos.y() - 1, sectionPos.z()));
+        if (y == 15) this.voxy$ingestSection(wi, self, SectionPos.of(sectionPos.x(), sectionPos.y() + 1, sectionPos.z()));
+        if (z == 0) this.voxy$ingestSection(wi, self, SectionPos.of(sectionPos.x(), sectionPos.y(), sectionPos.z() - 1));
+        if (z == 15) this.voxy$ingestSection(wi, self, SectionPos.of(sectionPos.x(), sectionPos.y(), sectionPos.z() + 1));
+    }
+
+    @Unique
+    private void voxy$ingestSection(WorldIdentifier wi, ClientLevel level, SectionPos sectionPos) {
+        var chunk = level.getChunk(sectionPos.x(), sectionPos.z(), ChunkStatus.FULL, false);
+        if (chunk == null) {
+            return;
+        }
+
+        int sectionIndex = sectionPos.y() - this.bottomSectionY;
+        if (sectionIndex < 0 || sectionIndex >= chunk.getSections().length) {
+            return;
+        }
+
+        var section = chunk.getSection(sectionIndex);
+        var lightEngine = level.getLightEngine();
+        var blockLight = lightEngine.getLayerListener(LightLayer.BLOCK).getDataLayerData(sectionPos);
+        var skyLight = lightEngine.getLayerListener(LightLayer.SKY).getDataLayerData(sectionPos);
+
+        VoxelIngestService.rawIngest(
+                wi,
+                section,
+                sectionPos.x(),
+                sectionPos.y(),
+                sectionPos.z(),
+                blockLight == null ? null : blockLight.copy(),
+                skyLight == null ? null : skyLight.copy()
+        );
     }
 }

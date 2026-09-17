@@ -163,6 +163,14 @@ dependencies {
     modCompileOnly("maven.modrinth:vivecraft:$viveFabric")
     modCompileOnly("maven.modrinth:flashback:${prop("deps.flashback")}")
 
+    // Sable sub-level compat (1.21.1 only — deps.sable is defined only in the
+    // 1.21.1 node gradle.properties; classes compile from versions/1.21.1/src/java).
+    // Compile-only: runtime is user-provided.
+    runCatching { prop("deps.sable") }.getOrNull()?.let { sableVer ->
+        modCompileOnly("dev.ryanhcode.sable:sable-fabric-1.21.1:$sableVer@jar")
+        modCompileOnly("dev.ryanhcode.sable-companion:sable-companion-common-1.21.1:${prop("deps.sable-companion")}@jar")
+    }
+
     implementation(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
     implementation("org.lwjgl:lwjgl")
     implementation("org.lwjgl:lwjgl-lmdb:$lwjglVersion")

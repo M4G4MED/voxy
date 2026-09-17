@@ -269,4 +269,8 @@ public abstract class AbstractRenderPipeline extends TrackedObject {
     //Null means no scaling factor
     public float[] getRenderScalingFactor() {return null;}
 
+    public int getSableOcclusionDepthTexture() {
+        return 0;
+    }
+
 }

@@ -53,6 +53,12 @@ repositories {
         url = uri("https://artifex.soh.gg/maven/m3t4f1v3/bp-voxy-packages/")
     }
 
+    // Sable + sable-companion compile-only artifacts (1.21.1 compat)
+    maven {
+        name = "RyanHCode"
+        url = uri("https://maven.ryanhcode.dev/releases")
+    }
+
     if (prop("useRubyOnly").toBoolean()) {
         exclusiveContent {
             forRepository {

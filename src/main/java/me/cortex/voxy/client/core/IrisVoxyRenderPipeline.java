@@ -297,4 +297,12 @@ public class IrisVoxyRenderPipeline extends AbstractRenderPipeline {
     public float[] getRenderScalingFactor() {
         return this.data.resolutionScale;
     }
+
+    @Override
+    public int getSableOcclusionDepthTexture() {
+        if (this.data.renderToVanillaDepth || this.fbTranslucent.getDepthTex() == null) {
+            return 0;
+        }
+        return this.fbTranslucent.getDepthTex().id;
+    }
 }

@@ -92,6 +92,10 @@ public class VoxyRenderSystem {
     public float getCapturedFogEnd()   { return this.capturedFogEnd; }
     public float[] getCapturedFogColor() { return this.capturedFogColor; }
 
+    public int getSableOcclusionDepthTexture() {
+        return this.pipeline.getSableOcclusionDepthTexture();
+    }
+
     private static AbstractSectionRenderer.Factory<?,? extends IGeometryData> getRenderBackendFactory() {
         //TODO: need todo a thing where selects optimal section render based on if supports the pipeline and geometry data type
         return MDICSectionRenderer.FACTORY;

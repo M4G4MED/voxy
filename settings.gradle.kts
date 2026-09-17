@@ -45,5 +45,6 @@ dependencyResolutionManagement {
         maven("https://maven.terraformersmc.com/releases/") { name = "TerraformersMC" }
         maven("https://maven.neoforged.net/releases/") { name = "NeoForged" }
         maven("https://maven.parchmentmc.org") { name = "ParchmentMC" }
+        maven("https://maven.ryanhcode.dev/releases") { name = "RyanHCode" }
     }
 }

@@ -12,11 +12,17 @@ import java.util.Set;
 public class ClientVoxyMixinPlugin implements IMixinConfigPlugin {
     private static boolean valkyrienSkiesInstalled;
     private static boolean nvidiumInstalled;
+    private static boolean connectorInstalled;
+    private static boolean sableInstalled;
+    private static boolean sodiumInstalled;
 
     @Override
     public void onLoad(String mixinPackage) {
         valkyrienSkiesInstalled = VoxyCommon.getPlatformUtil().isModLoaded("valkyrienskies");
         nvidiumInstalled = VoxyCommon.getPlatformUtil().isModLoaded("nvidium");
+        connectorInstalled = VoxyCommon.getPlatformUtil().isModLoaded("connector");
+        sableInstalled = VoxyCommon.getPlatformUtil().isModLoaded("sable");
+        sodiumInstalled = VoxyCommon.getPlatformUtil().isModLoaded("sodium");
     }
 
     @Override
@@ -28,6 +34,22 @@ public class ClientVoxyMixinPlugin implements IMixinConfigPlugin {
             mixins.add("sodium.MixinSodiumWorldRendererVS");
         } else {
             mixins.add("sodium.MixinDefaultChunkRenderer");
+        }
+
+        if (connectorInstalled) {
+            mixins.add("sodium.MixinShaderLoader");
+        }
+
+        // Sable contraption/sub-level compat is 1.21.1 only: the mixin classes
+        // live in the versions/1.21.1 source layer and are absent from the
+        // 1.20.1 jar, so only add them when Sable is actually present.
+        if (sableInstalled) {
+            mixins.add("minecraft.MixinGameRendererSableRenderDistance");
+            mixins.add("sable.MixinSableReacharoundCulling");
+            mixins.add("sable.MixinSableDepthShim");
+            if (sodiumInstalled) {
+                mixins.add("sable.MixinSableSubLevelRenderSectionManager");
+            }
         }
 
         return mixins;

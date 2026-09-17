@@ -45,5 +45,7 @@
   "voxy.config.general.fogDensity": "Fog density",
   "voxy.config.general.fogDensity.tooltip": "Density of the fog, higher values make the fog thicker",
   "voxy.config.general.skyFogDistance": "Sky fog distance",
-  "voxy.config.general.skyFogDistance.tooltip": "Distance at which sky fog starts to render in chunks"
+  "voxy.config.general.skyFogDistance.tooltip": "Distance at which sky fog starts to render in chunks",
+  "voxy.config.general.simulated_contraption_render_distance": "Simulated Contraption render distance",
+  "voxy.config.general.simulated_contraption_render_distance.tooltip": "Render simulated contraptions in this % of a voxy render distance with a base of vanilla render distance (requires Sable)"
 }
