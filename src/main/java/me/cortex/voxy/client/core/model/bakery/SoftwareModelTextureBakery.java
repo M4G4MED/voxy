@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static org.lwjgl.opengl.ARBDirectStateAccess.glGetTextureImage;
+import static org.lwjgl.opengl.ARBDirectStateAccess.glGetTextureLevelParameteri;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11C.GL_RGBA;
 import static org.lwjgl.opengl.GL12.GL_PACK_IMAGE_HEIGHT;
@@ -85,12 +86,25 @@ public class SoftwareModelTextureBakery {
     }
 
     private void _doSetupTexture(int glId) {
-        glBindTexture(GL_TEXTURE_2D, glId);
-        int width = glGetTexLevelParameteri(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH);
-        int height = glGetTexLevelParameteri(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT);
+        int width = glGetTextureLevelParameteri(glId, 0, GL_TEXTURE_WIDTH);
+        int height = glGetTextureLevelParameteri(glId, 0, GL_TEXTURE_HEIGHT);
 
+        //Just do it ourselves as doing it with b3d has some issues, (doing it ourselves is also just much much much shorter)
+        //Upstream fix (cortex 44f625a3/83880c49): use DSA glGetTextureImage with the PACK state
+        //fully reset; the legacy glBindTexture+glGetTexImage path left stale PACK_ROW_LENGTH/PBO
+        //bindings from other systems (iris/sodium PBO uploads) and corrupted large atlas reads.
         int[] pixels = new int[width * height];
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+        glFlush();
+        glFinish();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        glPixelStorei(GL_PACK_ROW_LENGTH, width);
+        glPixelStorei(GL_PACK_IMAGE_HEIGHT, 0);
+        glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+        glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+        glPixelStorei(GL_PACK_ALIGNMENT, 4);
+        glGetTextureImage(glId, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
         this.rasterizer.setSamplerTexture(pixels, width, height);
     }
