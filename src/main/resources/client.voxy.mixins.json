@@ -22,7 +22,7 @@
     "iris.MixinProgramSet",
     "iris.MixinShaderPackSourceNames",
     "iris.MixinStandardMacros",
-    // "minecraft.MixinBlockableEventLoop",
+    "minecraft.MixinBlockableEventLoop",
     "minecraft.MixinClientChunkCache",
 //? if 1.20.1
     "sodium.AccessorSodiumOptionsGUI",
@@ -38,7 +38,7 @@
     "minecraft.MixinDebugScreenOverlay",
     "minecraft.MixinFogRenderer",
     "minecraft.MixinGameRenderer",
-    // "minecraft.MixinGlDebug",
+    "minecraft.MixinGlDebug",
     "minecraft.MixinLevelRenderer",
     "minecraft.MixinMinecraft",
     "minecraft.MixinRenderSystem",
