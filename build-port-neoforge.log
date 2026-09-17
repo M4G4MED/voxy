@@ -1,0 +1,62 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Running Stonecutter 0.9.4
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :1.20.1-fabric
+Fabric Loom: 1.16.2
+
+> Configure project :1.21.1-fabric
+Fabric Loom: 1.16.2
+
+> Task :1.21.1-neoforge:stonecutterPrepare
+> Task :1.21.1-neoforge:stonecutterGenerate
+> Task :1.21.1-neoforge:createMinecraftArtifacts UP-TO-DATE
+
+> Task :1.21.1-neoforge:compileJava
+/root/voxy-build/versions/1.21.1-neoforge/build/generated/stonecutter/main/java/me/cortex/voxy/client/mixin/minecraft/MixinGlDebug.java:22: error: cannot find symbol
+    @WrapOperation(method = "printDebugLog", at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;Ljava/lang/Object;)V", remap = false))
+                                                   ^
+  symbol:   class At
+  location: class MixinGlDebug
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+1 error
+
+> Task :1.21.1-neoforge:compileJava FAILED
+
+[Incubating] Problems report is available at: file:///root/voxy-build/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':1.21.1-neoforge:compileJava'.
+> Compilation failed; see the compiler output below.
+  /root/voxy-build/versions/1.21.1-neoforge/build/generated/stonecutter/main/java/me/cortex/voxy/client/mixin/minecraft/MixinGlDebug.java:22: error: cannot find symbol
+      @WrapOperation(method = "printDebugLog", at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;Ljava/lang/Object;)V", remap = false))
+                                                     ^
+    symbol:   class At
+    location: class MixinGlDebug
+  1 error
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 39s
+7 actionable tasks: 3 executed, 4 up-to-date

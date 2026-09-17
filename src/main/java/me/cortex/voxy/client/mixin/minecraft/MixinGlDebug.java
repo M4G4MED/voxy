@@ -20,8 +20,9 @@ import java.io.StringWriter;
 // Capabilities.testShaderCompilesOk feature probing entirely.
 @Mixin(com.mojang.blaze3d.platform.GlDebug.class)
 public class MixinGlDebug {
+    // printDebugLog is private static in 1.21.1 -> the WrapOperation callback must be static
     @WrapOperation(method = "printDebugLog", at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;Ljava/lang/Object;)V", remap = false))
-    private void voxy$wrapDebug(Logger instance, String base, Object msgObj, Operation<Void> original) {
+    private static void voxy$wrapDebug(Logger instance, String base, Object msgObj, Operation<Void> original) {
         if (isGlDebugLogEntry(msgObj)) {
             var throwable = new Throwable(String.valueOf(msgObj));
             if (isCausedByVoxy(throwable.getStackTrace())) {
@@ -51,7 +52,7 @@ public class MixinGlDebug {
     }
 
     @Unique
-    private boolean isCausedByVoxy(StackTraceElement[] trace) {
+    private static boolean isCausedByVoxy(StackTraceElement[] trace) {
         for (var elem : trace) {
             if (elem.getClassName().startsWith("me.cortex.voxy")) {
                 return true;
@@ -61,7 +62,7 @@ public class MixinGlDebug {
     }
 
     @Unique
-    private boolean isCausedByShaderCompileTest(StackTraceElement[] trace) {
+    private static boolean isCausedByShaderCompileTest(StackTraceElement[] trace) {
         for (var elem : trace) {
             if (elem.getClassName().equals(Capabilities.class.getName()) && elem.getMethodName().equals("testShaderCompilesOk")) {
                 return true;

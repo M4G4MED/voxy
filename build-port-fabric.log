@@ -1,0 +1,54 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Running Stonecutter 0.9.4
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :1.20.1-fabric
+Fabric Loom: 1.16.2
+
+> Configure project :1.21.1-fabric
+Fabric Loom: 1.16.2
+
+> Task :1.21.1-fabric:stonecutterPrepare
+> Task :1.21.1-fabric:stonecutterGenerate
+
+> Task :1.21.1-fabric:compileJava
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :1.21.1-fabric:processResources
+> Task :1.21.1-fabric:classes
+> Task :1.21.1-fabric:jar
+> Task :1.21.1-fabric:processIncludeJars UP-TO-DATE
+> Task :1.21.1-fabric:sourcesJar
+> Task :1.21.1-fabric:stonecutterPrepareTest UP-TO-DATE
+> Task :1.21.1-fabric:stonecutterGenerateTest NO-SOURCE
+> Task :1.21.1-fabric:compileTestJava NO-SOURCE
+> Task :1.21.1-fabric:processTestResources NO-SOURCE
+> Task :1.21.1-fabric:testClasses UP-TO-DATE
+> Task :1.21.1-fabric:test NO-SOURCE
+> Task :1.21.1-fabric:validateAccessWidener UP-TO-DATE
+> Task :1.21.1-fabric:check UP-TO-DATE
+Cannot remap clearLevel because it does not exist in any of the targets [net/minecraft/client/Minecraft]
+> Task :1.21.1-fabric:remapSourcesJar
+> Task :1.21.1-fabric:remapJar
+> Task :1.21.1-fabric:assemble
+> Task :1.21.1-fabric:build
+
+[Incubating] Problems report is available at: file:///root/voxy-build/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 19s
+14 actionable tasks: 8 executed, 6 up-to-date
