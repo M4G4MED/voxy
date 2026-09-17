@@ -24,7 +24,7 @@ public class MixinSubLevelHoldingChunkMap {
     private ServerLevel level;
 
     @Inject(method = "processUnload", at = @At("TAIL"), remap = false)
-    private void voxy$markProcessedHoldingChunk(ChunkPos chunkPos, CallbackInfo ci) {
+    private void voxy$markProcessedHoldingChunk(ChunkPos chunkPos, java.util.Collection<ServerSubLevel> unloadedSubLevels, CallbackInfo ci) {
         voxy$markOrUnmark(chunkPos);
     }
 
