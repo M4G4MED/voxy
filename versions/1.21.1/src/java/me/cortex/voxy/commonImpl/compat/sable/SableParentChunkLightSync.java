@@ -43,6 +43,13 @@ public final class SableParentChunkLightSync {
                 return;
             }
 
+            // SubLevelTrackingSystem.tick invokes this every server tick per level;
+            // with no tracked sub-levels there is nothing to refresh, so skip the
+            // per-tick HashSet/iterator allocations entirely.
+            if (container.getAllSubLevels().isEmpty()) {
+                return;
+            }
+
             long gameTime = level.getGameTime();
             Map<TrackingKey, Long> nextRefreshTick = NEXT_REFRESH_TICK.computeIfAbsent(level, ignored -> new HashMap<>());
             Set<TrackingKey> activeKeys = new HashSet<>();

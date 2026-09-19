@@ -11,6 +11,14 @@ import java.util.List;
 public final class SableReacharoundCulling {
     private static final double HYSTERESIS_BLOCKS = 32.0D;
 
+    // filter() runs once per RenderType layer per frame (several times per frame with
+    // the same camera); reuse one list + one scratch vector instead of allocating per
+    // call and per sub-level. Safe because each renderSectionLayer call fully consumes
+    // the returned iterable before the next filter() invocation (sequential rendering),
+    // and Sable never retains it.
+    private static final List<ClientSubLevel> SCRATCH_VISIBLE = new ArrayList<>();
+    private static final Vector3d SCRATCH_CENTER = new Vector3d();
+
     private SableReacharoundCulling() {
     }
 
@@ -25,13 +33,14 @@ public final class SableReacharoundCulling {
             return subLevels;
         }
 
-        List<ClientSubLevel> visibleSubLevels = new ArrayList<>();
+        SCRATCH_VISIBLE.clear();
         for (ClientSubLevel subLevel : subLevels) {
             if (isInRenderDistance(subLevel, cameraX, cameraZ, renderDistanceBlocks)) {
-                visibleSubLevels.add(subLevel);
+                SCRATCH_VISIBLE.add(subLevel);
             }
         }
-        return visibleSubLevels;
+
+        return SCRATCH_VISIBLE;
     }
 
     private static boolean isInRenderDistance(ClientSubLevel subLevel, double cameraX, double cameraZ, double renderDistanceBlocks) {
@@ -40,7 +49,8 @@ public final class SableReacharoundCulling {
             return true;
         }
 
-        Vector3d center = new Vector3d(
+        Vector3d center = SCRATCH_CENTER;
+        center.set(
                 (bounds.minX() + bounds.maxX() + 1) * 0.5D,
                 (bounds.minY() + bounds.maxY() + 1) * 0.5D,
                 (bounds.minZ() + bounds.maxZ() + 1) * 0.5D

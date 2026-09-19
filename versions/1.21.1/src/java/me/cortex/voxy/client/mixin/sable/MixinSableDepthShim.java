@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -26,6 +27,15 @@ public abstract class MixinSableDepthShim {
             float partialTicks,
             CallbackInfo ci
     ) {
+        // Sable calls renderSectionLayer for every RenderType layer every frame even
+        // when there are no sub-levels to draw; running the shim then costs several
+        // full-screen depth blits per layer per frame for zero visual benefit.
+        // end() is deliberately NOT gated: it is a no-op when begin() was skipped,
+        // and gating it risks leaking activeState if the two callbacks ever observed
+        // different iterable instances.
+        if (isEmptySubLevelIterable(subLevels)) {
+            return;
+        }
         VoxySableDepthShim.begin(modelView, projection);
     }
 
@@ -43,5 +53,12 @@ public abstract class MixinSableDepthShim {
             CallbackInfo ci
     ) {
         VoxySableDepthShim.end();
+    }
+
+    @Unique
+    private static boolean isEmptySubLevelIterable(Iterable<ClientSubLevel> subLevels) {
+        return subLevels instanceof java.util.Collection<?> collection
+                ? collection.isEmpty()
+                : !subLevels.iterator().hasNext();
     }
 }

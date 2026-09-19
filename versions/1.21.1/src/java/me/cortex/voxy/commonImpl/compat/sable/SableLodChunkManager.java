@@ -31,6 +31,12 @@ public final class SableLodChunkManager {
     private static final int TICKET_DISTANCE = 2;
 
     private static final Map<ServerLevel, LongSet> activeChunkLoads = new WeakHashMap<>();
+    private static final Map<ServerLevel, Long> NEXT_UPDATE_TICK = new WeakHashMap<>();
+    // The heavy part (bounds scan over every sub-level, holding-chunk index copy,
+    // per-chunk distance tests, ticket set churn) used to run EVERY server tick.
+    // Tickets only gate physics chunk presence, so 1s latency is invisible in-game
+    // and removes the constant 20 Hz server-thread cost.
+    private static final long UPDATE_INTERVAL_TICKS = 20L;
 
     private static boolean sableUnavailable;
 
@@ -40,8 +46,16 @@ public final class SableLodChunkManager {
     public static void updateTickets(ServerLevel level, LongSet trackedChunks, LongSet trackedHoldingChunks) {
         if (sableUnavailable) {
             clearTickets(level, trackedChunks, trackedHoldingChunks);
+            NEXT_UPDATE_TICK.remove(level);
             return;
         }
+
+        long gameTime = level.getGameTime();
+        Long nextUpdate = NEXT_UPDATE_TICK.get(level);
+        if (nextUpdate != null && gameTime < nextUpdate) {
+            return;
+        }
+        NEXT_UPDATE_TICK.put(level, gameTime + UPDATE_INTERVAL_TICKS);
 
         try {
             double horizontalRenderDistanceBlocks = SableContraptionRenderDistance.getRangeBlocks(level);

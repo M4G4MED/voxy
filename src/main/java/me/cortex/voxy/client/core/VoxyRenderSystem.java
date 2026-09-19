@@ -107,7 +107,10 @@ public class VoxyRenderSystem {
         world.acquireRef();
         Logger.info("Creating Voxy render system");
 
-        System.gc();
+        // System.gc() here used to stop-the-world for seconds on large heaps during
+        // every render-system rebuild (world joins, session churn with Sable sub-levels).
+        // The GL allocations below do not need a forced full GC; the JVM collects the
+        // unreachable previous-system objects on its own schedule.
 
         if (Minecraft.getInstance().options.renderDistance().get()<3) {
             String msg = "Voxy: Having a vanilla render distance of 2 can cause rare culling near the edge of your screen issues, please use 3 or more";
@@ -123,7 +126,8 @@ public class VoxyRenderSystem {
 
         try {
             //wait for opengl to be finished, this should hopefully ensure all memory allocations are free
-            glFinish();
+            // One glFinish is sufficient to drain the queue; the duplicate doubled the
+            // render-thread stall on every rebuild (Sable session churn hits this path).
             glFinish();
 
             this.worldIn = world;

@@ -28,8 +28,33 @@ public final class SableClientSkyLightCache {
     private SableClientSkyLightCache() {
     }
 
-    public static synchronized void cacheFromPacket(ClientLevel level, ClientboundLevelChunkWithLightPacket packet) {
-        if (unavailable) {
+    // All entry points (packet handling, ClientLevel.tick, entity/particle light
+    // sampling) run on the client main thread, so no locking is required. The old
+    // synchronized + WeakHashMap lookups ran per entity/particle per frame via
+    // revision() and per chunk packet; on contraption-heavy scenes that was measurable.
+    private static volatile long revision;
+
+    // The cache is only ever read by the sub-level sky-light fallback. Without Sable
+    // installed, unpacking sky sections for every chunk packet was pure waste on the
+    // hot network-thread path during world load.
+    private static Boolean sablePresent;
+
+    private static boolean isSablePresent() {
+        Boolean present = sablePresent;
+        if (present == null) {
+            try {
+                Class.forName("dev.ryanhcode.sable.api.sublevel.SubLevelContainer");
+                present = Boolean.TRUE;
+            } catch (Throwable t) {
+                present = Boolean.FALSE;
+            }
+            sablePresent = present;
+        }
+        return present;
+    }
+
+    public static void cacheFromPacket(ClientLevel level, ClientboundLevelChunkWithLightPacket packet) {
+        if (unavailable || !isSablePresent()) {
             return;
         }
 
@@ -53,15 +78,18 @@ public final class SableClientSkyLightCache {
                     continue;
                 }
 
+                // unpackLayer already produces DataLayers backed by fresh cloned
+                // arrays that vanilla never aliases, so caching them directly is
+                // safe; the previous extra copy() doubled the per-packet garbage.
                 state.skyLightSections.put(
                         SectionPos.asLong(chunkX, minSection + sectionIndex, chunkZ),
-                        new CachedSkyLight(skyLight.copy(), gameTime)
+                        new CachedSkyLight(skyLight, gameTime)
                 );
                 cachedAny = true;
             }
 
             if (cachedAny) {
-                state.revision++;
+                revision++;
             }
             enforceMaxSize(state);
         } catch (RuntimeException | LinkageError e) {
@@ -71,7 +99,7 @@ public final class SableClientSkyLightCache {
         }
     }
 
-    public static synchronized int getSkyLight(ClientLevel level, BlockPos pos) {
+    public static int getSkyLight(ClientLevel level, BlockPos pos) {
         CacheState state = CACHES.get(level);
         if (state == null || state.skyLightSections.isEmpty()) {
             return -1;
@@ -103,12 +131,11 @@ public final class SableClientSkyLightCache {
         return Math.min(15, cached.skyLight.get(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
     }
 
-    public static synchronized long revision(ClientLevel level) {
-        CacheState state = CACHES.get(level);
-        return state == null ? 0L : state.revision;
+    public static long revision(ClientLevel level) {
+        return revision;
     }
 
-    public static synchronized void tick(ClientLevel level) {
+    public static void tick(ClientLevel level) {
         try {
             CacheState state = CACHES.get(level);
             if (state == null) {
@@ -132,7 +159,7 @@ public final class SableClientSkyLightCache {
             }
 
             if (removedAny) {
-                state.revision++;
+                revision++;
             }
             if (state.skyLightSections.isEmpty()) {
                 CACHES.remove(level);
@@ -143,7 +170,7 @@ public final class SableClientSkyLightCache {
         }
     }
 
-    public static synchronized void clear(ClientLevel level) {
+    public static void clear(ClientLevel level) {
         CACHES.remove(level);
     }
 
@@ -158,7 +185,6 @@ public final class SableClientSkyLightCache {
     private static final class CacheState {
         private final Map<Long, CachedSkyLight> skyLightSections = new HashMap<>();
         private long nextSweepGameTime;
-        private long revision;
     }
 
     private record CachedSkyLight(DataLayer skyLight, long gameTime) {
