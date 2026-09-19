@@ -47,12 +47,23 @@ public class ClientVoxyMixinPlugin implements IMixinConfigPlugin {
             mixins.add("minecraft.MixinGameRendererSableRenderDistance");
             mixins.add("sable.MixinSableReacharoundCulling");
             mixins.add("sable.MixinSableDepthShim");
-            if (sodiumInstalled) {
+            // Per-sub-level Sodium RenderSectionManager only exists in Sable 1.x;
+            // Sable 2.x renders sub-levels through its own dispatcher instead.
+            if (sodiumInstalled && classExists("dev.ryanhcode.sable.sublevel.render.sodium.SubLevelRenderSectionManager")) {
                 mixins.add("sable.MixinSableSubLevelRenderSectionManager");
             }
         }
 
         return mixins;
+    }
+
+    private static boolean classExists(String name) {
+        try {
+            Class.forName(name, false, ClientVoxyMixinPlugin.class.getClassLoader());
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     @Override

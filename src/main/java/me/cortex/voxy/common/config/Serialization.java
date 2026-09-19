@@ -170,6 +170,12 @@ public class Serialization {
         try {
             InputStream stream = Serialization.class.getClassLoader()
                     .getResourceAsStream(pack.replaceAll("[.]", "/"));
+            // On NeoForge's union/wrapper classloader a package "directory" has no
+            // listing stream; the file-based scan in init() already covers those
+            // classes, so treat a missing listing as empty instead of NPE'ing.
+            if (stream == null) {
+                return List.of();
+            }
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
             return reader.lines().flatMap(inner -> {
                 if (inner.endsWith(".class")) {
