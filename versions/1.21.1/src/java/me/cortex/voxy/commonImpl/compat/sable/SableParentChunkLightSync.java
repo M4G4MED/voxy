@@ -124,7 +124,13 @@ public final class SableParentChunkLightSync {
         LevelLightEngine lightEngine = level.getLightEngine();
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                if (trackingView.contains(chunkX, chunkZ)) {
+                // The client can only store chunks inside its own view range (which the
+                // server-side tracking view mirrors). Chunk packets pushed for chunks
+                // OUTSIDE the tracking view are protocol-invalid: the client drops the
+                // chunk and spams "Ignoring chunk since it's not in the view range"
+                // (vanilla ClientChunkCache). Only re-sync chunks the player actually
+                // has so their lighting refresh.
+                if (!trackingView.contains(chunkX, chunkZ)) {
                     continue;
                 }
 
