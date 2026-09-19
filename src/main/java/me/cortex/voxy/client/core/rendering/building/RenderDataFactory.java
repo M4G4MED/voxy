@@ -5,6 +5,7 @@ import me.cortex.voxy.client.core.model.ModelFactory;
 import me.cortex.voxy.client.core.model.ModelQueries;
 import me.cortex.voxy.client.core.util.ScanMesher2D;
 import me.cortex.voxy.common.Logger;
+import me.cortex.voxy.common.util.LumiseneUtil;
 import me.cortex.voxy.common.util.MemoryBuffer;
 import me.cortex.voxy.common.util.UnsafeUtil;
 import me.cortex.voxy.common.world.WorldEngine;
@@ -241,6 +242,9 @@ public class RenderDataFactory {
                         //TODO: cache the results of this, then link it to `block` do same optimization as SaveLoadSystem3
 
                         long modelMetadata = this.modelMan.getModelMetadataFromClientId(modelId);
+                        if (LumiseneUtil.isLumisene(this.world.getMapper(), block)) {
+                            block = Mapper.withLight(block, 0xFF);
+                        }
 
                         sectionData[i * 2] = packPartialQuadData(modelId, block, modelMetadata);
                         sectionData[i * 2 + 1] = modelMetadata;
