@@ -132,18 +132,19 @@ public final class SableLodChunkManager {
             return false;
         }
 
-        double horizontalRenderDistanceBlocks = SableContraptionRenderDistance.getRangeBlocks(level);
-        if (horizontalRenderDistanceBlocks <= 0.0) {
+        if (SableContraptionRenderDistance.getRangeBlocks(level) <= 0.0) {
             return false;
         }
 
-        long chunk = ChunkPos.asLong(chunkX, chunkZ);
-        LongSet activeChunks = activeChunkLoads.get(level);
-        if (activeChunks != null && activeChunks.contains(chunk)) {
-            return true;
-        }
-
-        return isChunkWithinHorizontalDistance(level, new ChunkPos(chunkX, chunkZ), horizontalRenderDistanceBlocks * horizontalRenderDistanceBlocks);
+        // M4G4MED/voxy#2: answering "true" for chunks that are merely INSIDE the
+        // simulated-contraption range makes Sable's PhysicsChunkTicketManager.update()
+        // call the blocking Level.getChunk() on the server thread for every one of
+        // them. Over unrendered terrain that stalls the integrated server for tens of
+        // seconds (40s+ watchdog dumps). Only answer yes when the chunk is already
+        // present at FULL status -- exactly the condition under which getChunk()
+        // cannot block. Our own region tickets (updateTickets) load the in-range
+        // chunks asynchronously instead.
+        return level.getChunkSource().getChunkNow(chunkX, chunkZ) != null;
     }
 
     public static boolean isSubLevelAlreadyActive(ServerLevel level, SubLevelData data) {
