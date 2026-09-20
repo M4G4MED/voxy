@@ -13,4 +13,6 @@ bin/
 .settings/
 
 .vscode/
-*.xmlbuild-*.log
+*.xml
+*.log
+build-*.log
