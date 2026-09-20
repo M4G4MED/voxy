@@ -24,6 +24,10 @@ public class ClientSessionEvents {
         if (!inSession) throw new IllegalStateException("Cannot end a session while not in a session");
         inSession = false;
 
+        //? if 1.21.1 {
+        me.cortex.voxy.client.core.distant.DistantTerrainManager.stopActive();
+        //? }
+
         VoxyCommon.shutdownInstance();
     }
 }

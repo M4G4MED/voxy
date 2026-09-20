@@ -3,6 +3,7 @@ package me.cortex.voxy.client.mixin.minecraft;
 import me.cortex.voxy.client.RenderStatistics;
 import me.cortex.voxy.client.core.IGetVoxyRenderSystem;
 import me.cortex.voxy.client.core.VoxyRenderSystem;
+import me.cortex.voxy.client.core.distant.DistantTerrainManager;
 import me.cortex.voxy.client.core.util.GPUTiming;
 import me.cortex.voxy.commonImpl.VoxyCommon;
 import net.minecraft.ChatFormatting;
@@ -71,6 +72,8 @@ public abstract class MixinDebugScreenOverlay {
             vrs.addDebugInfo(renderLines);
             voxyLines.addAll(renderLines);
         }
+
+        DistantTerrainManager.addDebugLines(voxyLines);
 
         info.getReturnValue().addAll(voxyLines);
     }

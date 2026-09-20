@@ -69,10 +69,18 @@ public class VoxyCommands {
                     .executes(ctx->verifyTLNs((CommandContext<CommandSourceStack>)ctx, BoolArgumentType.getBool((CommandContext<CommandSourceStack>)ctx, "attemptRepair"))))
             );
 
+        //? if 1.21.1 {
+        var distantTree = LiteralArgumentBuilder.<CommandSourceStack>literal("distant")
+            .executes(VoxyCommands::distant);
+        //? }
+
         return LiteralArgumentBuilder.<CommandSourceStack>literal("voxy")//.requires((ctx)-> VoxyCommon.getInstance() != null)
             .then(LiteralArgumentBuilder.<CommandSourceStack>literal("reload")
                 .executes(VoxyCommands::reloadInstance))
             .then(imports)
+            //? if 1.21.1 {
+            .then(distantTree)
+            //? }
             .then(debug);
     }
 
@@ -300,6 +308,31 @@ public class VoxyCommands {
         }
         return 1;
     }
+
+    //? if 1.21.1 {
+    private static int distant(CommandContext<CommandSourceStack> ctx) {
+        var conf = me.cortex.voxy.client.config.DistantTerrainConfig.get();
+        var mc = Minecraft.getInstance();
+
+        if (mc.isLocalServer()) {
+            // toggle: stop the current pass, next join/start picks up new config
+            conf.enabled = !conf.enabled;
+            conf.save();
+            me.cortex.voxy.client.core.distant.DistantTerrainManager.stopActive();
+            var p = Minecraft.getInstance().player;
+            if (p != null) {
+                p.displayClientMessage(Component.literal("Distant terrain " + (conf.enabled ? "enabled" : "disabled") + " (takes effect next world join)"), false);
+            }
+            return 0;
+        } else {
+            var p = Minecraft.getInstance().player;
+            if (p != null) {
+                p.displayClientMessage(Component.literal("Distant terrain: singleplayer only"), false);
+            }
+            return 1;
+        }
+    }
+    //? }
 
     private static int cancelImport(CommandContext<CommandSourceStack> ctx) {
         var instance = (VoxyClientInstance)VoxyCommon.getInstance();

@@ -6,6 +6,8 @@ import me.cortex.voxy.commonImpl.VoxyCommon;
 import me.cortex.voxy.commonImpl.VoxyInstance;
 import me.cortex.voxy.commonImpl.WorldIdentifier;
 //? if 1.21.1
+import me.cortex.voxy.client.core.distant.DistantTerrainManager;
+//? if 1.21.1
 import me.cortex.voxy.commonImpl.compat.sable.SableClientSkyLightCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -57,6 +59,7 @@ public abstract class MixinClientLevel {
     @Inject(method = "tick(Ljava/util/function/BooleanSupplier;)V", at = @At("TAIL"))
     private void voxy$tickSableSkyLightCache(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
         SableClientSkyLightCache.tick((ClientLevel) (Object) this);
+        DistantTerrainManager.onClientLevelTick((ClientLevel) (Object) this);
     }
     //? }
 

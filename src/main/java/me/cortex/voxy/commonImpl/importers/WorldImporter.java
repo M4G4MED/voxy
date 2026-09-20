@@ -203,6 +203,7 @@ public class WorldImporter implements IDataImporter {
     }
 
     private volatile Thread worker;
+
     private IUpdateCallback updateCallback;
     private ICompletionCallback completionCallback;
     public void importRegionDirectoryAsync(File directory) {
@@ -218,6 +219,12 @@ public class WorldImporter implements IDataImporter {
             return;
         }
         Arrays.sort(files, File::compareTo);
+        this.importRegionsAsync(files, this::importRegionFile);
+    }
+
+    /** Queues a bounded set of region files for import (used by incremental background terrain loading).
+     *  Import order is the order of the given array (callers control priority). */
+    public void importRegionFilesAsync(File[] files) {
         this.importRegionsAsync(files, this::importRegionFile);
     }
 
