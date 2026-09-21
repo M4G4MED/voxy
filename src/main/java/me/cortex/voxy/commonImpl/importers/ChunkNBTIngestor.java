@@ -107,6 +107,7 @@ public class ChunkNBTIngestor {
             return false;
         }
 
+        boolean allImported = true;
         try {
             int x = chunk.getInt("xPos");
             int z = chunk.getInt("zPos");
@@ -121,8 +122,9 @@ public class ChunkNBTIngestor {
             }
         } catch (Exception e) {
             Logger.error("Exception importing world chunk:",e);
+            allImported = false;
         }
-        return true;
+        return allImported;
     }
 
     public static InputStream createInputStream(MemoryBuffer data) {

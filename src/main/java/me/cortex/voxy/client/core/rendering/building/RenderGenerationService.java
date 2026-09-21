@@ -159,6 +159,12 @@ public class RenderGenerationService {
             return;
         }
         section.assertNotFree();
+        //Version of the section content when the mesh snapshot starts. If any ingest
+        //write lands while the mesh is being built, this mesh is already stale by the
+        //time it finishes: submitting it can permanently overwrite a newer mesh that
+        //another worker raced to finish first (out-of-order apply), leaving a section
+        //rendering old data forever. Such builds are discarded and re-queued instead.
+        final long versionBefore = section.dataVersion.get();
         BuiltSection mesh = null;
 
 
@@ -267,7 +273,37 @@ public class RenderGenerationService {
         }
 
         if (mesh != null) {//If the mesh is null it means it didnt finish, so dont submit
-            if (this.resultConsumer != null) {
+            //If the section's content changed while this mesh was being built, this mesh
+            //is stale: applying it could permanently overwrite a fresher mesh produced by
+            //a racing task (out-of-order completion), leaving that section rendering old
+            //data until a full reload. Discard it and re-queue so the current content wins.
+            if (section.dataVersion.get() != versionBefore && task.attempts < 64) {
+                mesh.free();
+                if (task.section != null) {
+                    this.holdingSectionCount.decrementAndGet();
+                }
+                task.section = null;
+                task.attempts++;
+                task.addin = 1;//push slightly later so a hot section can find a quiet gap
+                //Re-register the task the same way the model-bake retry does: if a newer
+                //task for this position already took the map slot, that one will rebuild
+                //from the current content, so ours must not be queued (double queueing
+                //would break the taskMap remove invariant).
+                boolean requeued;
+                {
+                    long stamp = this.taskMapLock.writeLock();
+                    requeued = this.taskMap.putIfAbsent(task.position, task) == null;
+                    this.taskMapLock.unlockWrite(stamp);
+                }
+                if (requeued) {
+                    task.updatePriority();
+                    this.taskQueue.add(task);
+                    this.taskQueueCount.incrementAndGet();
+                    this.service.execute();
+                }
+                shouldFreeSection = true;
+            }
+            else if (this.resultConsumer != null) {
                 this.resultConsumer.accept(mesh);
             } else {
                 mesh.free();

@@ -155,6 +155,12 @@ public class WorldUpdater {
         long status = 0;
         status |= didStateChange?1:0;
         status |= Integer.toUnsignedLong(airCount)<<1;//VERY VERY VERY IMPORTANT NOTE: IS 13 BITS BIG NOT 12 BITS (since it can be 4096 which is 6 bits large)
+        if (didStateChange) {
+            //Publish the content bump before any dirty/markDirty event can enqueue a mesh
+            //task, so a task that acquires this section afterwards always observes the
+            //version covering its own triggering write.
+            worldSection.dataVersion.incrementAndGet();
+        }
         return status;
     }
 }

@@ -56,7 +56,9 @@ public class RegionChunkReader implements AutoCloseable {
 
     /** Reads and ingests one saved chunk.
      *  @return 1 when the chunk was found and ingested, 0 when the region file parsed
-     *  fine but does not contain this chunk (never saved), -1 on a read/IO error. */
+     *  fine but does not contain usable terrain for this chunk (let the synthesizer
+     *  handle it), 2 when the entry exists but holds only a mid-generation snapshot
+     *  (retry on a later pass, do NOT synthesize over it), -1 on a read/IO error. */
     public int readChunkAndIngest(int chunkX, int chunkZ) {
         int regionX = chunkX >> 5;
         int regionZ = chunkZ >> 5;

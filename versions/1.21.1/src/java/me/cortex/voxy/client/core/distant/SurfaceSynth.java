@@ -166,7 +166,9 @@ public class SurfaceSynth {
                 }
             }
             if (!VoxelIngestService.rawIngest(engine, section, chunk.getPos().x, minSection + i, chunk.getPos().z, emptyBlockLight, new DataLayer(sky))) {
-                break;
+                //Ingest failed mid-column; the column is incomplete. Report failure so the
+                //chunk is retried instead of being marked done with a permanent hole.
+                return false;
             }
             any = true;
         }

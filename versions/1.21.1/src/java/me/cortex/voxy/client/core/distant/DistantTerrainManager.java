@@ -80,6 +80,7 @@ public class DistantTerrainManager {
     public final LongAdder synthQueuedTotal = new LongAdder();
     public volatile long readDone = 0;
     public final LongAdder synthDone = new LongAdder();
+    public final LongAdder synthFailed = new LongAdder();
 
     private DistantTerrainManager(WorldIdentifier worldId, ResourceKey<Level> dimension, File regionDirectory, WorldEngine engine) {
         this.worldId = worldId;
@@ -191,6 +192,7 @@ public class DistantTerrainManager {
             lastStatsLogMs = now;
             Logger.info("Distant terrain stats: read_queued=" + readQueuedTotal + " read_done=" + readDone
                     + " synth_queued=" + synthQueuedTotal.sum() + " synth_done=" + synthDone.sum()
+                    + " synth_failed=" + synthFailed.sum()
                     + " pend_r=" + readQueue.size() + " pend_s=" + synthQueue.size()
                     + " workers=" + synthWorkersActive.get() + "/" + SYNTH_WORKER_COUNT
                     + " center=" + pcx + "," + pcz + " inner=" + margin);
@@ -445,9 +447,15 @@ public class DistantTerrainManager {
                     // No server-chunk-map queries here: ChunkMap internals are not safe to read
                     // off-thread. If the chunk happens to be loading, normal ingest simply
                     // overwrites this approximation when it lands.
-                    SurfaceSynth.synthAndIngest(serverLevel, engine, cx, cz);
-                    synthDone.increment();
-                    markChunkDone(job.key());
+                    if (SurfaceSynth.synthAndIngest(serverLevel, engine, cx, cz)) {
+                        synthDone.increment();
+                        markChunkDone(job.key());
+                    } else {
+                        //Synth or ingest did not complete; do NOT mark done or the
+                        //chunk is permanently missing (a hole that never heals).
+                        synthFailed.increment();
+                        markChunkFailed(job.key());
+                    }
                 } catch (Throwable th) {
                     Logger.error("Distant terrain: synth failed for " + cx + "," + cz, th);
                     markChunkFailed(job.key());

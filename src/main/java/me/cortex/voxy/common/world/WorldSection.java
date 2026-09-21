@@ -54,6 +54,9 @@ public final class WorldSection {
     long[] data = null;
     volatile int nonEmptyBlockCount = 0;//Note: only needed for level 0 sections
     volatile byte nonEmptyChildren;
+    //Bumped on every data write to this section. Lets mesh generation detect that its
+    //acquired snapshot went stale while the task was running/in the task map.
+    public final java.util.concurrent.atomic.AtomicLong dataVersion = new java.util.concurrent.atomic.AtomicLong();
 
     final ActiveSectionTracker tracker;
     volatile boolean inSaveQueue;
@@ -81,6 +84,7 @@ public final class WorldSection {
 
     void primeForReuse() {
         ATOMIC_STATE_HANDLE.set(this, 1);
+        dataVersion.incrementAndGet();//stale mesh tasks must never consider themselves valid across a reuse
     }
 
     public long[] _unsafeGetRawDataArray() {
