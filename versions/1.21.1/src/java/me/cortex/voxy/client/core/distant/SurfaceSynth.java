@@ -100,6 +100,15 @@ public class SurfaceSynth {
         // packed chunk pos -> surface-only chunk (biomes+noise+surface, heightmaps primed)
         private final ConcurrentHashMap<Long, SurfaceChunk> surfaceChunks = new ConcurrentHashMap<>();
         private final AtomicInteger decorErrorBudget = new AtomicInteger(64);
+        // Vanilla ore features write across chunk borders through BulkSectionAccess,
+        // which acquire/release-locks the PalettedContainers of the *shared* cached
+        // neighbours. Two workers decorating adjacent chunks collide on one container:
+        // ThreadingDetector throws AND leaks the semaphore permit (its throw path never
+        // releases), permanently poisoning that cached chunk - later workers touching it
+        // block forever holding a world ref (holes that never heal + exit deadlock).
+        // Decoration is vanilla-global-writer-like anyway (spill mutates neighbours),
+        // so it runs single-at-a-time; surface generation and ingest stay parallel.
+        private final Object decorationLock = new Object();
 
         // Only consumed by WorldGenRegion for directDependencies()/blockStateWriteRadius();
         // mirrors vanilla's FEATURES pipeline shape (write radius 1 chunk).
@@ -191,18 +200,29 @@ public class SurfaceSynth {
             if (!decorate) {
                 return surface;
             }
-            ChunkAccess copy = copyForDecoration(surface);
-            DecorationRegion region = new DecorationRegion(copy, level, featuresStep);
-            try {
-                generator.applyBiomeDecoration(region, copy, structureManager);
-            } catch (Throwable t) {
-                if (decorErrorBudget.getAndDecrement() > 0) {
-                    Logger.error("Distant terrain: decoration failed for chunk " + cx + "," + cz
-                            + " (further errors logged with a budget)", t);
+            ChunkAccess copy;
+            DecorationRegion region;
+            // One decorator at a time: vanilla features (OreFeature via
+            // BulkSectionAccess) write into the shared cached neighbours, whose
+            // PalettedContainers are not thread-safe and whose ThreadingDetector
+            // throws leak a semaphore permit (poisoned container = permanent hang
+            // for the next accessor). The deep copy reads those same cached
+            // neighbours, so it is guarded by the same lock (no torn palette
+            // reads). See decorationLock comment.
+            synchronized (decorationLock) {
+                copy = copyForDecoration(surface);
+                region = new DecorationRegion(copy, level, featuresStep);
+                try {
+                    generator.applyBiomeDecoration(region, copy, structureManager);
+                } catch (Throwable t) {
+                    if (decorErrorBudget.getAndDecrement() > 0) {
+                        Logger.error("Distant terrain: decoration failed for chunk " + cx + "," + cz
+                                + " (further errors logged with a budget)", t);
+                    }
+                    //Degrade rather than fail: the copy still holds correct surface
+                    //terrain (possibly minus some features). Failing the chunk instead
+                    //would just re-queue it into the same crash.
                 }
-                //Degrade rather than fail: the copy still holds correct surface
-                //terrain (possibly minus some features). Failing the chunk instead
-                //would just re-queue it into the same crash.
             }
             return copy;
         }

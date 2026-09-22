@@ -101,9 +101,12 @@ public class ChunkNBTIngestor {
             return false;
         }
 
-        //Dont process non full chunk sections
+        //Dont process chunks that never reached the surface-carving step: their
+        //sections hold no real terrain (mid-generation snapshots some chunk
+        //systems persist). Anything CARVERS-or-later carries final block content
+        //and ingests exactly like FULL; EMPTY is kept for data-upgrade chunks.
         var status = ChunkStatus.byName(chunk.getString("Status"));
-        if (status != ChunkStatus.FULL && status != ChunkStatus.EMPTY) {//We also import empty since they are from data upgrade
+        if (!(status == ChunkStatus.EMPTY || status.isOrAfter(ChunkStatus.CARVERS))) {
             return false;
         }
 

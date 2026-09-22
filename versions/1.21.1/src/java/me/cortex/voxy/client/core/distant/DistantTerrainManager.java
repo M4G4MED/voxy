@@ -66,6 +66,9 @@ public class DistantTerrainManager {
     private final PriorityBlockingQueue<Job> synthQueue = new PriorityBlockingQueue<>(512, Comparator.comparingLong(Job::distSq));
     private final AtomicBoolean readWorkerActive = new AtomicBoolean(false);
     private final AtomicInteger synthWorkersActive = new AtomicInteger(0);
+    /** Live worker threads so stop() can interrupt blocked decoration/reads. */
+    private final java.util.concurrent.ConcurrentHashMap.KeySetView<Thread, Boolean> workerThreads =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static final int SYNTH_WORKER_COUNT = Math.max(2, Math.min(8, Runtime.getRuntime().availableProcessors() - 4));
     private volatile boolean stopping = false;
 
@@ -357,6 +360,7 @@ public class DistantTerrainManager {
     // ---- Read phase: single chunks read by random access, nearest first ----
     private void readLoop(ServerLevel serverLevel) {
         boolean refAcquired = false;
+        workerThreads.add(Thread.currentThread());
         try {
             if (!stillValid(serverLevel)) {
                 return;
@@ -411,6 +415,7 @@ public class DistantTerrainManager {
                 Logger.error("Distant terrain: read worker crashed", t);
             }
         } finally {
+            workerThreads.remove(Thread.currentThread());
             readWorkerActive.set(false);
             if (refAcquired && engine.isLive()) {
                 try {
@@ -427,6 +432,7 @@ public class DistantTerrainManager {
     // ---- Synth phase: never-saved chunks approximated from the world's own generation ----
     private void synthLoop(ServerLevel serverLevel) {
         boolean refAcquired = false;
+        workerThreads.add(Thread.currentThread());
         try {
             if (!stillValid(serverLevel)) {
                 return;
@@ -474,6 +480,7 @@ public class DistantTerrainManager {
                 Logger.error("Distant terrain: synth worker died", t);
             }
         } finally {
+            workerThreads.remove(Thread.currentThread());
             synthWorkersActive.decrementAndGet();
             if (refAcquired && engine.isLive()) {
                 try {
@@ -502,15 +509,36 @@ public class DistantTerrainManager {
         stopping = true;
         readQueue.clear();
         synthQueue.clear();
-        long deadline = System.currentTimeMillis() + 3000;
-        while ((readWorkerActive.get() || synthWorkersActive.get() > 0) && System.currentTimeMillis() < deadline) {
+        //Ask every worker to unwind NOW: interrupt breaks Semaphore.acquire()/join()/sleep()
+        //inside in-flight work (e.g. vanilla decoration), so the worker reaches its
+        //finally-block and releases its engine ref. Without this, a worker parked on a
+        //vanilla lock keeps the world ref forever and shutdown spins at "Not all worlds
+        //shutdown" with the game frozen.
+        for (Thread t : workerThreads) {
+            t.interrupt();
+        }
+        long deadline = System.currentTimeMillis() + 5000;
+        while (!workerThreads.isEmpty() && System.currentTimeMillis() < deadline) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 break;
             }
         }
-        //Workers have exited; dropping the synth scratch state is now race-free.
+        if (!workerThreads.isEmpty()) {
+            //Something is still stuck: name it and dump where, so the log alone explains it.
+            StringBuilder sb = new StringBuilder("Distant terrain: workers still alive after stop timeout:");
+            for (Thread t : workerThreads) {
+                sb.append("\n  ").append(t.getName()).append(" -> ").append(t.getState());
+                for (StackTraceElement e : t.getStackTrace()) {
+                    sb.append("\n      at ").append(e);
+                }
+            }
+            Logger.error(sb.toString());
+        }
+        //Workers exited (or are unrecoverably stuck); dropping synth scratch state here is
+        //best-effort either way.
         SurfaceSynth.clearAllCaches();
     }
 
