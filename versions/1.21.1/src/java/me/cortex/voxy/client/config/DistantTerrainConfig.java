@@ -42,6 +42,11 @@ public class DistantTerrainConfig {
     // Max noise-built chunk tasks handed to the background worker per pass.
     public int max_chunks_per_pass = 64;
 
+    // Whether surface decoration (trees, flowers, and other biome features) is
+    // also applied to synthesized chunks. Costs ~2-3x the plain surface synth
+    // time per chunk; set false for pure terrain filling.
+    public boolean decorate_with_features = true;
+
     private static DistantTerrainConfig INSTANCE = null;
 
     public static DistantTerrainConfig get() {

@@ -510,6 +510,8 @@ public class DistantTerrainManager {
                 break;
             }
         }
+        //Workers have exited; dropping the synth scratch state is now race-free.
+        SurfaceSynth.clearAllCaches();
     }
 
     public static void addDebugLines(List<String> out) {
